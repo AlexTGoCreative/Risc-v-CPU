@@ -9,8 +9,6 @@ Opensource RISC-V implemented from scratch in one night!
 
 Case you already have the Icarus Verilog installed, just clone the code and type make!
 
-    git clone git@github.com:darklife/darkriscv.git
-    cd darkriscv
     make
 
 And it will run the DarkRISCV with the default firmware, which will print
@@ -45,11 +43,7 @@ So, you can add the signals from each module and explore the waveforms! :)
 	- [Acknowledgments](#acknowledgments)
 	- [References](#references)
 
-## Introduction
-
-Developed in a magic night of 19 Aug, 2018 between 2am and 8am, the
-*DarkRISCV* softcore started as an proof of concept for the opensource
-RISC-V instruction set.  
+## Introduction 
 
 Although the code is small and crude when compared with other RISC-V
 implementations, the *DarkRISCV* has lots of impressive features:

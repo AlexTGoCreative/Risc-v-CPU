@@ -30,9 +30,9 @@ include config.mk
 
 # Add your application here:
 
-#APPLICATION = darkshell
+APPLICATION = darkshell
 #APPLICATION = coremark
-APPLICATION = calc
+#APPLICATION = 
 
 PROJ = darksocv
 LIBS = $(APPLICATION)/$(APPLICATION).a $(DARKLIBC)/$(DARKLIBC).a 

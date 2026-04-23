@@ -43,7 +43,7 @@ This produces `src/darksocv.mem` (the firmware image).
 ### Step 2 — Convert firmware to MIF format
 
     cd boards/de2_cyclone2
-    py mem2mif.py
+    py mem2mif.py ..\..\src\darksocv.mem memory_init.mif 8192
 
 This reads `../../src/darksocv.mem` and writes `memory_init.mif` in the same folder.
 The MIF file is referenced by `_darkram.v` and gets compiled into the FPGA bitstream.
