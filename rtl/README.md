@@ -1,84 +1,62 @@
-## RTL Directory
+# RTL — Hardware Description (Verilog)
 
-The RTL directory contains the DarkRISCV core and some auxiliary files, such
-as the DarkSoCV (a small system-on-chip with ROM, RAM and IO), the DarkUART
-(a small UART for debug) and the configuration file, where is possible
-enable and disable some features that are described in the Implementation
-Notes section.
+This directory contains all the Verilog source files that describe the DarkRISCV
+system-on-chip (SoC). When synthesised onto an FPGA, these files become real
+hardware — a working RISC-V computer.
 
-The real RTL hierarchy is the following:
+For in-depth documentation aimed at beginners, see the [doc/](../doc/) folder.
 
-    darksocv -|
-              |- darkpll
-              |
-              |- darkbridge -|
-              |              |- darkriscv
-              |              |
-              |              |- darkcache (2x instruction)
-              |
-              |- darkram
-              |
-    
-              |
-              |- darkio -|
-              |          |- darkuart
-              |          |
-              |          |- darkspi (optional)                         
-              |
-              |- sdram (optional)
+## File Map
 
-The RTL hierarchy starts in the RTL top level, the DarkSoCV, which will
-interface with the device pins and interconnect the most external buses and
-interfaces. The DarkSoCV contains the DarkPLL, DarkBridge, DarkRAM, DarkIO
-and the SDRAM controller (optional).
+| File | What it is |
+|---|---|
+| `config.vh` | Master configuration — pipeline, ISA, memory size, board, features |
+| `darkriscv.v` | **The CPU core** — fetches, decodes and executes RISC-V instructions |
+| `darkbridge.v` | Bus bridge — connects the CPU to caches and the external bus |
+| `darkcache.v` | Optional L1 instruction/data cache |
+| `darkram.v` | On-chip BRAM — dual-port memory for instructions and data |
+| `darksocv.v` | **Top-level SoC** — wires together CPU, memory, I/O, SDRAM |
+| `darkio.v` | I/O controller — LEDs, timer, interrupt controller, UART/SPI routing |
+| `darkuart.v` | UART transmitter/receiver (115200 baud serial port) |
+| `darkpll.v` | Clock generator (PLL) — multiplies the board clock to the target frequency |
+| `darkmac.v` | Optional 16×16 multiply-accumulate coprocessor |
+| `darkspi.v` | Optional SPI master peripheral |
+| `lib/sdram/` | SDRAM controller (external DRAM interface) |
+| `lib/spi/` | SPI master IP core and simulation stubs |
 
-The DarkPLL is supposed to include the IP from the manufacturer with the
-respective PLL or clock generator.  Case there is no IP, it will just be
-skiped, so the external XCLK and XRES are connected to internal CLK and RES.
+## Module Hierarchy
 
-The DarkBridge is a glue logic that can operate with following modes:
+```
+darksocv (top-level SoC)
+ ├── darkpll          (clock: 50 MHz → 100 MHz)
+ ├── darkbridge       (bus bridge)
+ │    ├── darkriscv   (THE CPU CORE)
+ │    ├── darkcache   (optional L1 i-cache)
+ │    └── darkcache   (optional L1 d-cache)
+ ├── darkram          (on-chip BRAM, 8-32 KB)
+ ├── darkio           (I/O subsystem)
+ │    ├── darkuart    (serial port)
+ │    └── darkspi     (SPI, optional)
+ └── sdram controller (external DRAM, optional)
+```
 
-    - synchronous Harvard Architecture mode: it will just wire the internal
-      core buses to the external buses directly, so the entire device will
-      operate with Harvard Architecture, providing the best performance
-      possible. that is enabled with __HARVARD__ on config.vh.
+## Address Map
 
-    - asynchonous von Neumann Architecture mode: it will make the core wait
-      to service the buses in a sequential way, so while the core is
-      waiting, it will perform read/write data access, as well read
-      instructions, in an asynchronous way, accordly to a 3 cycle bus
-      interface, with idle cycle, address cycle and data cycle.  between the
-      address and data, the external device can insert any number of
-      wait-states.
+The top 2 bits of the 32-bit address select which peripheral is accessed:
 
-    - mixed mode: the mixed mode will support the operation in both ways,
-      thanks to L1 caches! so, when there are cache hits, the core will just
-      work at the maximum speed like in the synchronous Harvard Architecture
-      mode. However, case there are misses, the core will wait and work at
-      the speed defined by the external buses and state machines, like in
-      the asynchronous von Neumann Architecture mode.
+| Address range | Bits [31:30] | Target |
+|---|---|---|
+| `0x00000000 – 0x3FFFFFFF` | `00` | BRAM (on-chip memory) |
+| `0x40000000 – 0x7FFFFFFF` | `01` | I/O (UART, LEDs, timer, GPIO) |
+| `0x80000000 – 0xBFFFFFFF` | `10` | SDRAM (optional external memory) |
+| `0xC0000000 – 0xFFFFFFFF` | `11` | Unused |
 
-The DarkRAM provides up to two independent buses for the system and they can
-operate in lots of modes, including the synchronous Harvard Architecture
-mode, as well the asynchronous von Neumann Architecture mode, with support
-for programmable wait-states and read/modify/write cycles.
+## Bus Architecture
 
-The DarkIO provide some basic IO, including board ID, PLL frequency,
-interrupt register, programmable timer, real time clock (in microseconds),
-GPIO and UART. 
+DarkBridge supports two modes controlled by `__HARVARD__` in `config.vh`:
 
-Although UART is typically simple, the UART in this case is provided by the
-DarkUART, which include lots of features regarding simulation debug and
-performance (FIFOs).
-
-Finally, we have the 3rd party modules: the DarkSPI and SDRAM! That modules
-are stored in a separate directory, so they can keep separate licenses
-and/or extra files and documentation:
-
-  - SDRAM controller: from kianRiscV 
-    https://github.com/splinedrive/kianRiscV/blob/master/linux_socs/kianv_harris_mcycle_edition/sdram/mt48lc16m16a2_ctrl.v
-    note: this module is licensed under ISC license.
-
-  - SPI controller: support for STMicroelectronics LIS3DH accelerometer+thermal sensor
-    note: this moduel licensed under GPL license.
-
+- **Harvard mode** (default): separate instruction and data buses operate in
+  parallel — best performance (CPI ≈ 1.7)
+- **Von Neumann mode**: a single shared bus multiplexes instruction fetches and
+  data accesses — slower, but required for single-port memories like SDRAM.
+  L1 caches (`__ICACHE__` / `__DCACHE__`) mitigate the performance penalty.
