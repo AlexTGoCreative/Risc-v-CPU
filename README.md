@@ -44,18 +44,18 @@ can be simulated on any PC using **Icarus Verilog** (a free, open-source tool).
 
 ## 2. How to Navigate This Documentation
 
-This folder (`doc/`) contains all the narrative documentation. Each file
+The `doc/` folder contains all the narrative documentation. Each file
 addresses one layer of the system, from the ground up:
 
 | Document | What you will learn |
 |---|---|
 | **You are here** — `README.md` | Project overview, diagram guide, glossary, reading order |
-| [cpu-core.md](cpu-core.md) | How the CPU fetches, decodes, and executes RISC-V instructions; the pipeline; the ALU; branches; the register file; interrupts |
-| [soc-architecture.md](soc-architecture.md) | How all modules (CPU, memory, UART, timer, LEDs) are wired together into a complete computer; bus architecture; address decoding |
-| [memory-and-io.md](memory-and-io.md) | How firmware (C code) reads and writes memory and peripheral registers; memory map; UART protocol; timer; LEDs |
-| [simulation-guide.md](simulation-guide.md) | Step-by-step: build firmware → compile RTL → run simulation → interpret output → view waveforms |
-| [diagrams.md](diagrams.md) | **In-depth visual guide** to all three architecture diagrams (PNG files); every block and signal explained |
-| [rtl-implementation.md](rtl-implementation.md) | **RTL source walkthrough** — how to read the Verilog files in `rtl/`; what each module does; how the code maps to the hardware concepts |
+| [doc/cpu-core.md](doc/cpu-core.md) | How the CPU fetches, decodes, and executes RISC-V instructions; the pipeline; the ALU; branches; the register file; interrupts |
+| [doc/soc-architecture.md](doc/soc-architecture.md) | How all modules (CPU, memory, UART, timer, LEDs) are wired together into a complete computer; bus architecture; address decoding |
+| [doc/memory-and-io.md](doc/memory-and-io.md) | How firmware (C code) reads and writes memory and peripheral registers; memory map; UART protocol; timer; LEDs |
+| [doc/simulation-guide.md](doc/simulation-guide.md) | Step-by-step: build firmware → compile RTL → run simulation → interpret output → view waveforms |
+| [doc/diagrams.md](doc/diagrams.md) | **In-depth visual guide** to all three architecture diagrams (PNG files); every block and signal explained |
+| [doc/rtl-implementation.md](doc/rtl-implementation.md) | **RTL source walkthrough** — how to read the Verilog files in `rtl/`; what each module does; how the code maps to the hardware concepts |
 
 ---
 
@@ -63,11 +63,11 @@ addresses one layer of the system, from the ground up:
 
 Three PNG images in this folder are the primary visual reference for the
 design. A brief description of each follows; full analysis is in
-[diagrams.md](diagrams.md).
+[doc/diagrams.md](doc/diagrams.md).
 
 ### 3.1 `boot.png` — Simulation Output Screenshot
 
-![DarkRISCV boot screenshot](boot.png)
+![DarkRISCV boot screenshot](doc/boot.png)
 
 **What it shows:** A screenshot of the simulation terminal output — the text
 that the CPU's firmware prints over the serial port when it first powers on.
@@ -88,13 +88,13 @@ evidence that the processor is running correctly.
 - `Welcome to DarkRISCV!` followed by `492>` — the shell prompt; `492` is how
   many instructions executed during boot.
 
-Full line-by-line analysis is in [diagrams.md § boot.png](diagrams.md#1-bootpng--the-simulation-boot-screenshot).
+Full line-by-line analysis is in [doc/diagrams.md § boot.png](doc/diagrams.md#1-bootpng--the-simulation-boot-screenshot).
 
 ---
 
 ### 3.2 `darkriscv.png` — CPU Core Block Diagram
 
-![DarkRISCV CPU core block diagram](darkriscv.png)
+![DarkRISCV CPU core block diagram](doc/darkriscv.png)
 
 **What it shows:** The internal architecture of the `darkriscv.v` CPU core
 module — the processor itself, without any surrounding memory or peripherals.
@@ -132,13 +132,13 @@ module — the processor itself, without any surrounding memory or peripherals.
    fetch-decode-execute cycle.
 
 Full analysis with signal-level detail is in
-[diagrams.md § darkriscv.png](diagrams.md#2-darkriscvpng--cpu-core-block-diagram).
+[doc/diagrams.md § darkriscv.png](doc/diagrams.md#2-darkriscvpng--cpu-core-block-diagram).
 
 ---
 
 ### 3.3 `darksocv.png` — SoC Architecture Block Diagram
 
-![DarkSoCV SoC architecture block diagram](darksocv.png)
+![DarkSoCV SoC architecture block diagram](doc/darksocv.png)
 
 **What it shows:** The complete System-on-Chip (`darksocv.v`), showing how the
 CPU connects to the rest of the system. The diagram is split into two halves by
@@ -166,7 +166,7 @@ cycle. The cache layer hides the fact that BRAM is slightly slower. To external
 memory, only one transaction arrives at a time.
 
 Full analysis with bus-level details in
-[diagrams.md § darksocv.png](diagrams.md#3-darksocvpng--soc-architecture-block-diagram).
+[doc/diagrams.md § darksocv.png](doc/diagrams.md#3-darksocvpng--soc-architecture-block-diagram).
 
 ---
 
@@ -175,8 +175,9 @@ Full analysis with bus-level details in
 ```
 risc-v-cpu/
 │
-├── doc/                         ← You are here (all narrative documentation)
-│   ├── README.md                   This index file
+├── README.md                    ← You are here (project index and overview)
+│
+├── doc/                         ← All narrative documentation
 │   ├── diagrams.md                 In-depth guide to all three PNG diagrams
 │   ├── rtl-implementation.md       RTL source walkthrough (Verilog deep-dive)
 │   ├── cpu-core.md                 CPU pipeline, ALU, registers, interrupts
@@ -346,25 +347,25 @@ bus when needed (for external SDRAM).
 
 Follow this sequence for the best conceptual progression:
 
-1. **[diagrams.md](diagrams.md)** — Start by understanding what the visual
+1. **[doc/diagrams.md](doc/diagrams.md)** — Start by understanding what the visual
    diagrams show. No code knowledge required; pure architecture concepts.
 
-2. **[cpu-core.md](cpu-core.md)** — Dive into the CPU internals: how
+2. **[doc/cpu-core.md](doc/cpu-core.md)** — Dive into the CPU internals: how
    instructions flow through the 3-stage pipeline, how the ALU works, how
    branches and loads affect timing.
 
-3. **[soc-architecture.md](soc-architecture.md)** — Zoom out to the full SoC:
+3. **[doc/soc-architecture.md](doc/soc-architecture.md)** — Zoom out to the full SoC:
    how the CPU connects to memory and peripherals; the role of DarkBridge,
    DarkRAM, DarkIO, and the UART.
 
-4. **[memory-and-io.md](memory-and-io.md)** — Understand the software/hardware
+4. **[doc/memory-and-io.md](doc/memory-and-io.md)** — Understand the software/hardware
    interface: the memory map, how C code writes to an LED, how UART
    transmission works at the bit level.
 
-5. **[rtl-implementation.md](rtl-implementation.md)** — Read the actual Verilog
+5. **[doc/rtl-implementation.md](doc/rtl-implementation.md)** — Read the actual Verilog
    source files with guided annotations; understand how hardware concepts
    translate into HDL code.
 
-6. **[simulation-guide.md](simulation-guide.md)** — Run the simulation
+6. **[doc/simulation-guide.md](doc/simulation-guide.md)** — Run the simulation
    yourself, interpret the boot output, and explore signal waveforms in
    GTKWave.
