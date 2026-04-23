@@ -1,38 +1,118 @@
-## Add your board here! o/
+## Supported Board
 
-Use the AVNET Microboard LX9 as template, since is the best tested board at this
-moment, as long I can plug it in the computer and test it in less than five
-minutes:
+**Terasic DE2 — Altera Cyclone II EP2C35F672C6**
 
-    cp -rp avnet_micrboard_lx9 vendor_board_fpga
+All project files are in `boards/de2_cyclone2/`.
 
-In the case of Vivado, the easy way is use the QMTech Spartan-7 board as
-template. In the case of Vivado, there is no automation as found in the
-other FPGAs.
+| File | Purpose |
+|---|---|
+| `darksocv.qpf` | Quartus project file |
+| `darksocv.qsf` | Pin assignments and device settings |
+| `darksocv.sdc` | Timing constraints (50 MHz in → 100 MHz via PLL) |
+| `top.v` | Top-level Verilog wrapper |
+| `dut.v` | SoC instantiation |
+| `pll.v` | altpll megafunction (50 → 100 MHz) |
+| `_darkram.v` | Altera altsyncram BRAM (8 KB) |
+| `mem2mif.py` | Converts `darksocv.mem` to Altera MIF format |
 
-Current supported board/FPGAs:
+---
 
-    avnet_microboard_lx9
-    qmtech_sdram_lx16
-    qmtech spartan7 s15
-    xilinx_ac701_a200
-    lattice brevia2 lxp2
-    piswords rs485 lx9
+## Step-by-Step: Build and Program the DE2
 
-I am working in a way to make the directory structure better, but it is not
-so easy make everything work at the same time! :)
+### Prerequisites
+- **Quartus Prime** 20.1 Lite Edition (free) with Cyclone II device support installed
+- **USB Blaster** driver installed (comes with Quartus)
+- A **USB-A to USB-B** cable (for JTAG programming via the USB Blaster port on the DE2)
+- A **DB9 RS-232 cable** or **USB-to-RS232 adapter** (for UART communication)
+- A serial terminal — **PuTTY** or **TeraTerm** on Windows
 
-Proposed structure:
+---
 
-    boards/vendor_boardname_fpga/               top level directory
-    boards/vendor_boardname_fpga/darksocv.mk    top level makefile
-    boards/vendor_boardname_fpga/darksocv.*     other files (board/fpga specific)
+### Step 1 — Build the firmware
 
-In the current directory is possible set:
+From the project root:
 
-    make BOARD=avnet_microboard_lx9 all         # build fpga for $BOARD
-    make install                                # program fpga
+    cd src
+    # Make sure src/Makefile has APPLICATION = darkshell (or calc)
+    make all
 
-Of course, the FPGA programming via JTAG depends of some configurations
-which are different in different environments. Please check the README file
-regarding the board!
+This produces `src/darksocv.mem` (the firmware image).
+
+---
+
+### Step 2 — Convert firmware to MIF format
+
+    cd boards/de2_cyclone2
+    py mem2mif.py
+
+This reads `../../src/darksocv.mem` and writes `memory_init.mif` in the same folder.
+The MIF file is referenced by `_darkram.v` and gets compiled into the FPGA bitstream.
+
+---
+
+### Step 3 — Open the project in Quartus
+
+1. Launch **Quartus Prime**
+2. **File → Open Project** → navigate to `boards/de2_cyclone2/darksocv.qpf`
+3. The project opens with device **EP2C35F672C6** already selected
+
+---
+
+### Step 4 — Compile (synthesise + place & route)
+
+1. Click **Processing → Start Compilation** (or press `Ctrl+L`)
+2. Wait for compilation to finish (~5–10 minutes)
+3. Check for errors in the Messages pane — warnings about timing on UART/LEDs are expected and safe
+
+---
+
+### Step 5 — Connect the DE2 board
+
+1. Connect the **USB Blaster** cable from the DE2's `USB BLASTER` port to your PC
+2. Power the DE2 via its DC adapter (5V)
+3. The board should power on — all LEDs and 7-segment displays will light up with the factory demo
+
+---
+
+### Step 6 — Program the FPGA
+
+1. In Quartus: **Tools → Programmer**
+2. Click **Hardware Setup** → select **USB-Blaster**
+3. Click **Auto Detect** — the EP2C35 should appear
+4. Add the file `output_files/darksocv.sof` if not already listed
+5. Check the **Program/Configure** box
+6. Click **Start**
+7. Progress bar reaches 100% → FPGA is programmed (not persistent — lost on power cycle)
+
+> To make it persistent, program the `.pof` file into the serial flash using **Active Serial** mode instead.
+
+---
+
+### Step 7 — Connect the serial terminal
+
+The UART is on the **DB9 RS-232** connector (via MAX232 level shifter) on the DE2.
+
+1. Connect a DB9 cable or USB-to-RS232 adapter between the DE2 and your PC
+2. Open **PuTTY** → Connection type: **Serial**
+3. Set:
+   - **Port**: your COM port (check Device Manager)
+   - **Speed**: `115200`
+   - **Data bits**: `8`, **Stop bits**: `1`, **Parity**: `None`, **Flow control**: `None`
+4. Click **Open**
+
+---
+
+### Step 8 — Interact with the shell
+
+After programming, press **KEY[0]** (the rightmost push button) to reset the CPU.
+You should see the boot banner followed by the shell prompt:
+
+    board: de2 (id=21)
+    build: Thu, 23 Apr 2026 ...
+    core0: darkriscv@100MHz rv32i little-endian
+    ...
+    Welcome to DarkRISCV!
+
+    497>
+
+Type any command and press Enter. See `src/darkshell/README.md` for the full command list.

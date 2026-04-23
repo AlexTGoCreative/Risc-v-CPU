@@ -30,15 +30,9 @@ include config.mk
 
 # Add your application here:
 
-APPLICATION = mytest
 #APPLICATION = darkshell
 #APPLICATION = coremark
-#APPLICATION = badapple
-#APPLICATION = mandelbrot
-#APPLICATION = donut
-#APPLICATION = dhrystone
-#APPLICATION = spidemo
-#APPLICATION = primes
+APPLICATION = calc
 
 PROJ = darksocv
 LIBS = $(APPLICATION)/$(APPLICATION).a $(DARKLIBC)/$(DARKLIBC).a 

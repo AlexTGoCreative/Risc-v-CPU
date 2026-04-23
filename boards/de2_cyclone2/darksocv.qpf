@@ -1,0 +1,13 @@
+# -------------------------------------------------------------------------- #
+#
+# Quartus Prime Project File
+# DarkRISCV on Terasic DE2 (Altera Cyclone II EP2C35F672C6)
+#
+# -------------------------------------------------------------------------- #
+
+QUARTUS_VERSION = "20.1"
+DATE = "00:00:00  April 23, 2025"
+
+# Revisions
+
+PROJECT_REVISION = "darksocv"

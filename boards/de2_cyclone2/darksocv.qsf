@@ -1,0 +1,99 @@
+# -------------------------------------------------------------------------- #
+#
+# Quartus Prime Settings File
+# DarkRISCV on Terasic DE2 (Altera Cyclone II EP2C35F672C6)
+#
+# -------------------------------------------------------------------------- #
+#
+# Device:   EP2C35F672C6
+# Family:   Cyclone II
+# Package:  F672 (672-pin FBGA)
+# Speed:    C6
+#
+# Board clock:  50 MHz (CLOCK_50 -> PIN_N2)
+# PLL output:  100 MHz (x2)
+# UART:        115200 bps, via MAX232 on DB9 connector
+# Reset:        KEY[0] active-low  (PIN_G26)
+#
+# -------------------------------------------------------------------------- #
+
+set_global_assignment -name FAMILY "Cyclone II"
+set_global_assignment -name DEVICE EP2C35F672C6
+set_global_assignment -name TOP_LEVEL_ENTITY top
+set_global_assignment -name ORIGINAL_QUARTUS_VERSION 20.1
+set_global_assignment -name PROJECT_CREATION_TIME_DATE "00:00:00  APRIL 23, 2025"
+set_global_assignment -name LAST_QUARTUS_VERSION "20.1 Lite Edition"
+set_global_assignment -name PROJECT_OUTPUT_DIRECTORY output_files
+set_global_assignment -name MIN_CORE_JUNCTION_TEMP 0
+set_global_assignment -name MAX_CORE_JUNCTION_TEMP 85
+set_global_assignment -name DEVICE_FILTER_PACKAGE FBGA
+set_global_assignment -name DEVICE_FILTER_PIN_COUNT 672
+set_global_assignment -name DEVICE_FILTER_SPEED_GRADE 6
+set_global_assignment -name POWER_PRESET_COOLING_SOLUTION "23 MM HEAT SINK WITH 200 LFPM AIRFLOW"
+set_global_assignment -name POWER_BOARD_THERMAL_MODEL "NONE (CONSERVATIVE)"
+set_global_assignment -name ERROR_CHECK_FREQUENCY_DIVISOR 1
+
+# Macro defines board to config.vh
+set_global_assignment -name VERILOG_MACRO "DE2_CYCLONE2=1"
+
+# -------------------------------------------------------------------------- #
+# Pin Assignments
+# -------------------------------------------------------------------------- #
+
+# 50 MHz clock
+set_location_assignment PIN_N2  -to XCLK
+
+# KEY[0] = reset, active low
+set_location_assignment PIN_G26 -to XRES
+
+# UART (via MAX232 to DB9 RS-232 connector)
+set_location_assignment PIN_G12 -to UART_TXD
+set_location_assignment PIN_G13 -to UART_RXD
+
+# Red LEDs (LEDR[7:0])
+set_location_assignment PIN_AE23 -to LED[0]
+set_location_assignment PIN_AF23 -to LED[1]
+set_location_assignment PIN_AB21 -to LED[2]
+set_location_assignment PIN_AC22 -to LED[3]
+set_location_assignment PIN_AD22 -to LED[4]
+set_location_assignment PIN_AD23 -to LED[5]
+set_location_assignment PIN_AD21 -to LED[6]
+set_location_assignment PIN_AC21 -to LED[7]
+
+# -------------------------------------------------------------------------- #
+# I/O Standards
+# -------------------------------------------------------------------------- #
+
+set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to XCLK
+set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to XRES
+set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to UART_TXD
+set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to UART_RXD
+set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to LED[0]
+set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to LED[1]
+set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to LED[2]
+set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to LED[3]
+set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to LED[4]
+set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to LED[5]
+set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to LED[6]
+set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to LED[7]
+
+# -------------------------------------------------------------------------- #
+# RTL Source Files
+# -------------------------------------------------------------------------- #
+
+set_global_assignment -name VERILOG_INCLUDE_FILE ../../rtl/config.vh
+set_global_assignment -name VERILOG_FILE top.v
+set_global_assignment -name VERILOG_FILE dut.v
+set_global_assignment -name VERILOG_FILE pll.v
+set_global_assignment -name VERILOG_FILE _darkram.v
+set_global_assignment -name VERILOG_FILE ../../rtl/darksocv.v
+set_global_assignment -name VERILOG_FILE ../../rtl/darkriscv.v
+set_global_assignment -name VERILOG_FILE ../../rtl/darkbridge.v
+set_global_assignment -name VERILOG_FILE ../../rtl/darkuart.v
+set_global_assignment -name VERILOG_FILE ../../rtl/darkpll.v
+set_global_assignment -name VERILOG_FILE ../../rtl/darkio.v
+set_global_assignment -name VERILOG_FILE ../../rtl/darkcache.v
+set_global_assignment -name VERILOG_FILE ../../rtl/darkmac.v
+set_global_assignment -name VERILOG_FILE ../../rtl/lib/sdram/mt48lc16m16a2_ctrl.v
+
+set_global_assignment -name SDC_FILE darksocv.sdc
