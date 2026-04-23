@@ -47,6 +47,33 @@ does nothing.
 
 ---
 
+## CPU Core Block Diagram
+
+![DarkRISCV CPU Core](darkriscv.png)
+
+This is the official architecture diagram of `darkriscv.v`. Here is a guided tour of every element:
+
+| Element in diagram | What it is | Where in code |
+|---|---|---|
+| **PC** (top right) | Program Counter — holds the address of the next instruction to fetch | `IFPC` register |
+| **Instruction Cache / Instruction Bus** | Fetches the 32-bit instruction word from memory | `IADDR` / `IDATA` ports |
+| **IDATA (IF)** | Pipeline register that holds the instruction between Fetch and Decode | `XIDATA` register |
+| **Instruction Decode Logic** | Splits the 32-bit word into opcode, register numbers, and immediate | `XLUI`, `XJAL`, `XBCC` … one-hot signals |
+| **IMM (ID)** | Pipeline register that holds the decoded immediate value | `XSIMM` / `XUIMM` |
+| **Register file (X0 – X15, stacked ladder on the left)** | 32 general-purpose 32-bit registers; reads are combinational (multiple outputs at once), writes are clocked | `REGS[]` array |
+| **ALU — REG/REG and REG/IMM Results** (leftmost, bottom) | Main arithmetic unit: ADD, SUB, AND, OR, XOR, shifts, set-less-than | `RMDATA` wire |
+| **ALU — Conditional Branch Logic** (second from left) | Compares two registers and decides whether a branch is taken | `BMUX` wire |
+| **ALU — NEXT PC** (third from left) | Computes the new program counter: PC+4 (normal), PC+offset (branch), or register+offset (JALR) | PC update logic in `always@(posedge CLK)` |
+| **ALU — REG+IMM → DATA CACHE** (rightmost) | Computes the memory address for load/store instructions: rs1 + immediate | `DADDR` output |
+| **Data Cache / DATA/IO BUS** | Sends/receives data to/from BRAM, I/O registers, or SDRAM | `DATAO` / `DATAI` ports |
+| **STORE / LOAD** arrows | Store writes `DATAO` to memory; Load reads `DATAI` back into the register file | `DWR` / `DRD` signals |
+| **CLK, HLT, RES** inputs | Clock (100 MHz), pipeline stall, and reset — fed into both PC and register file | Module ports |
+| **NEXT PC loop** | The computed next address feeds back into the PC register to start the next fetch cycle | `IFPC <= JADDR` / `IFPC+4` |
+
+The key insight from this diagram: there are **four ALUs working in parallel** during the Execute stage — one for arithmetic results, one for branch decisions, one for PC update, and one for memory address calculation. This is why DarkRISCV needs no forwarding logic and no stall between pipeline stages.
+
+---
+
 ## Pipeline: How Instructions Flow
 
 DarkRISCV uses a **3-stage pipeline** (configured by `__3STAGE__` in config.vh).

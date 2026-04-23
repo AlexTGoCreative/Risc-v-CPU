@@ -109,6 +109,63 @@ This invokes `vvp darksocv` (the Icarus Verilog runtime), which:
 
 ## Understanding the Output
 
+### Boot Screenshot
+
+![DarkRISCV simulation boot output](boot.png)
+
+This screenshot shows a real simulation run. Here is what every line means:
+
+```
+boot0: main@0200 stack@01fb0
+```
+The boot assembler (`boot.S`) finished. `main` function is at address `0x0200` in BRAM. The stack pointer starts at `0x01fb0` (top of the stack, growing downward).
+
+```
+csrxx: not found
+stvec: not found
+mtvec: not found (polling)
+```
+The firmware tried to configure CSR registers for interrupts. They are not enabled in this build (`config.vh` does not define `__CSR__`), so the firmware falls back to polling mode (checking the timer register in a loop instead of using hardware interrupts).
+
+```
+board: simulation only (id=0)
+```
+The `BOARD_ID` configured in `config.vh` is 0, which the firmware recognises as "simulation only" mode.
+
+```
+build: Sun, 27 Apr 2025 15:11:03 -0300 for rv32e_zicsr
+```
+Timestamp when the firmware was compiled. `rv32e_zicsr` is the GCC march string: RV32E (reduced register file) plus the Zicsr extension.
+
+```
+core0: darkriscv@100MHz w/ rv32e
+```
+The CPU core is running at 100 MHz using the RV32E instruction set (16 registers instead of 32).
+
+```
+bram0: 352 bytes free
+bram0: text@0200+5048 data@15b0+2280 stack@2000
+```
+Memory layout report from the firmware: code (`.text`) starts at `0x0200` and is 5048 bytes long; data (`.data` + `.bss`) starts at `0x15b0` and uses 2280 bytes; stack top is at `0x2000`. Only 352 bytes of BRAM are unused.
+
+```
+uart0: 115.2kbps (div=868)
+```
+UART configured at 115200 baud. The divider value 868 = 100,000,000 Hz ÷ 115200.
+
+```
+timr0: 1000Hz (div=99999)
+```
+Timer interrupt set to fire 1000 times per second. Divider = 100,000,000 ÷ 1000 − 1 = 99999.
+
+```
+Welcome to DarkRISCV!
+492>
+```
+The shell is running. `492` is the instruction counter from the boot sequence (how many instructions executed to reach the prompt). `>` is the shell prompt — in simulation, this character also triggers `$finish()` to end the simulation.
+
+---
+
 ### DarkShell output
 
 ```

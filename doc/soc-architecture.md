@@ -17,7 +17,39 @@ design) that contains all of these components wired together. The file
 
 ---
 
-## Block Diagram
+## Official SoC Block Diagram
+
+![DarkSoCV SoC Architecture](darksocv.png)
+
+This diagram shows the two architectural halves of the system:
+
+**Left half — Synchronous Harvard Architecture**
+
+This is the high-speed side where the CPU lives. "Harvard" means instructions and data travel on separate buses simultaneously:
+
+| Element | What it does |
+|---|---|
+| **DarkRISCV @100MHz** | The CPU core. Sends instruction fetch requests on **I-BUS** and data load/store requests on **D-BUS** at the same time |
+| **I$** (Instruction Cache) | Sits between the I-BUS and main memory. Returns recently fetched instructions without going to slow BRAM every time |
+| **D$** (Data Cache) | Sits between the D-BUS and main memory. Reduces load/store latency for frequently accessed data |
+| **DarkBridge** | The central hub. Multiplexes the CPU's two buses onto the single shared bus (**X-BUS**) used by the right half |
+
+**Right half — Asynchronous Von Neumann Architecture**
+
+This is the memory and peripheral side. "Von Neumann" means instructions and data share the same bus:
+
+| Element | What it does |
+|---|---|
+| **DarkRAM (boot FW)** | Block RAM containing the firmware. Both instructions and data live here. Loaded at synthesis time from `memory_init.mif` |
+| **DarkIO** | I/O controller. Exposes memory-mapped registers for **LED** output and **UART** serial communication |
+| **SDRAM Controller** | Optional interface to external SDRAM for larger memory capacity |
+| **X-BUS** | The shared bus connecting DarkBridge to all right-side components. Address bits `[31:30]` select which device responds |
+
+**Why two halves?** The CPU needs to fetch instructions and read/write data every cycle without waiting. The cache layer hides the fact that BRAM and SDRAM are slower than the CPU. From the CPU's point of view, it always has fast Harvard-style memory; from the memory's point of view, only one request arrives at a time on the X-BUS.
+
+---
+
+## Simplified Block Diagram
 
 ```
                           FPGA Pins

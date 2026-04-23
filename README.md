@@ -1,3 +1,132 @@
+# RISC-V CPU (DarkRISCV SoC)
+
+This repository is a **RISC-V soft core and system-on-chip (SoC)** based on the [DarkRISCV](https://github.com/darklife/darkriscv) project. It provides Verilog RTL, firmware built with a RISC-V GCC toolchain, Icarus Verilog simulation, and a **Terasic DE2 (Altera Cyclone II)** board port.
+
+**Instruction set:** RISC-V **RV32I** (and optional features controlled in `rtl/config.vh` — see that file and [rtl/README.md](rtl/README.md)).  
+**Documentation (architecture, CPU, memory map, simulation):** start at [doc/README.md](doc/README.md).
+
+**In this file:** [Quick start](#quick-start-simulation) · [Project structure](#project-structure) · [Further reading](#further-reading) · [Retained DarkRISCV documentation](#darkriscv-project-documentation-upstream-retained) (long-form upstream text: features, history, build notes, benchmarks, etc.)
+
+---
+
+## Quick start (simulation)
+
+**Prerequisites**
+
+- [RISC-V GNU toolchain](https://github.com/riscv/riscv-gnu-toolchain) (e.g. `riscv32-unknown-elf-gcc` — exact prefix is set in `src/config.mk`)
+- [Icarus Verilog](https://github.com/steveicarus/iverilog) (`iverilog` on `PATH` or set `ICARUS` in `sim/Makefile`)
+- Optional: [GTKWave](https://gtkwave.sourceforge.net/) to view waveforms
+
+**From the repository root**
+
+```bash
+make
+```
+
+This builds the default firmware image (`src/darksocv.mem` via `make -C src`) and runs the Icarus simulation (`make -C sim`). On success you get console output from the SoC and a waveform file:
+
+- **VCD:** `sim/darksocv.vcd`
+
+View it with GTKWave, for example:
+
+```bash
+gtkwave sim/darksocv.vcd
+```
+
+Other useful targets (see top-level [Makefile](Makefile)):
+
+- `make all` — build firmware (`src`), run the full sim build (`sim`), then `boards` (the boards step only prints a pointer to the manual DE2 / Quartus flow; see [boards/README.md](boards/README.md))
+- `make clean` — clean `src`, `sim`, and `boards`
+- `make install` — `boards` target (use Quartus to program the DE2; see [boards/README.md](boards/README.md))
+
+---
+
+## Project structure
+
+```text
+.
+├── Makefile                 # Top-level: firmware + sim (default), or `all` / `clean` / `install`
+├── doc/                     # Narrative documentation (CPU, SoC, memory map, simulation)
+│   ├── README.md            # Index and glossary
+│   ├── cpu-core.md
+│   ├── soc-architecture.md
+│   ├── memory-and-io.md
+│   └── simulation-guide.md
+├── rtl/                     # Verilog: CPU core, SoC, peripherals (see rtl/README.md)
+│   ├── config.vh            # Build-time / synthesis options (memory size, features, etc.)
+│   ├── darkriscv.v          # CPU core
+│   ├── darksocv.v           # SoC top level
+│   ├── darkbridge.v, darkram.v, darkio.v, darkuart.v, darkpll.v
+│   ├── darkcache.v, darkmac.v, darkspi.v
+│   ├── README.md
+│   └── lib/
+│       ├── sdram/           # SDRAM controller (optional external memory)
+│       └── spi/             # SPI master IP, stubs, GTKWave save file
+├── src/                     # Firmware: toolchain, applications, C library
+│   ├── Makefile             # Picks application via `APPLICATION` (e.g. darkshell, coremark, calc)
+│   ├── config.mk            # `CC`, `CROSS` prefix, arch flags
+│   ├── boot.S               # Startup, banner, entry to `main`
+│   ├── darksocv.lds         # Linker script source (preprocessed → darksocv.ld)
+│   ├── darklibc/            # Minimal C library (stdio, string, io, etc.)
+│   ├── darkshell/           # Interactive shell (default app)
+│   ├── coremark/            # CoreMark benchmark
+│   ├── calc/                # Sample calculator-style app
+│   └── README.md
+├── sim/                     # Icarus testbench and runner
+│   ├── Makefile             # Compiles RTL + `darksimv.v` → `darksocv` executable, runs `run_sim.py`
+│   ├── darksimv.v
+│   ├── run_sim.py, trace.py
+│   └── README.md
+├── boards/                  # FPGA board support (this repo: one main target)
+│   ├── Makefile             # Stubs for top-level `all` / `clean` / `install` (Quartus flow is manual)
+│   ├── README.md
+│   └── de2_cyclone2/        # Terasic DE2 (Cyclone II): Quartus project, MIF, PLL, etc.
+└── scripts/
+    └── helpers.py           # Cross-platform helpers (e.g. `bin2hex`, MLEN extraction for linker)
+```
+
+Harvard split images (`darksocv.rom.mem` / `darksocv.ram.mem`) are used when **`HARVARD=1`** is set consistently for the firmware and simulation; otherwise a single **`darksocv.mem`** is used (see `src/Makefile` and `sim/Makefile`).
+
+---
+
+## Firmware applications
+
+`src/Makefile` sets **`APPLICATION`** (default: **`darkshell`**). Uncomment alternatives as needed, e.g. **`coremark`** or **`calc`**, and align any RTL options (e.g. memory length **`MLEN`** in `rtl/config.vh` vs. application) using [src/README.md](src/README.md) as a hint.
+
+| Directory    | Role                                      |
+|-------------|--------------------------------------------|
+| `darklibc/` | Static library used by the applications    |
+| `darkshell/`| Default firmware: serial shell / tests   |
+| `coremark/` | EEMBC CoreMark port                        |
+| `calc/`     | Small sample application                    |
+
+---
+
+## FPGA (Terasic DE2)
+
+Synthesis and programming for the **DE2 (Cyclone II)** are documented in [boards/README.md](boards/README.md) and the step-by-step flow in [boards/de2_cyclone2](boards/) (firmware build → MIF via `mem2mif.py` → Quartus → JTAG). There is no large catalog of vendor boards in this tree; the maintained board support is under **`boards/de2_cyclone2/`**.
+
+---
+
+## Further reading
+
+| Location | Content |
+|----------|---------|
+| [doc/README.md](doc/README.md) | Main documentation index and glossary |
+| [rtl/README.md](rtl/README.md) | RTL file map, hierarchy, address map |
+| [sim/README.md](sim/README.md) | Simulators, optional Verilator / cosim notes |
+| [src/README.md](src/README.md) | Application selection and `MLEN` note |
+
+For the upstream DarkRISCV history, feature list, and ecosystem, see the [original DarkRISCV repository](https://github.com/darklife/darkriscv).
+
+---
+
+## DarkRISCV project documentation (upstream, retained)
+
+The following sections are the classic **DarkRISCV** documentation preserved from the upstream project: feature list, history, directory notes, implementation details, toolchain, board list, benchmarks, and references. Some build log examples still show the older flat `src/` layout (`boot.c`, `darksocv.ld.src`, etc.) and Xilinx ISE board targets; **this repository** uses the tree in [Project structure](#project-structure) (`boot.S`, `darksocv.lds`, `APPLICATION` in `src/Makefile`, [doc/](doc/), [scripts/](scripts/), and [boards/de2_cyclone2/](boards/de2_cyclone2/)). When the text below refers to a `LICENSE` file at the repository root, note that licensing is recorded in per-file headers (and [rtl/lib/spi/LICENSE](rtl/lib/spi/LICENSE) for bundled SPI IP).
+
+---
+
 # DarkRISCV
 [![Build Status][WorkflowBadgeLinux]][WorkflowUrlLinux]
 
@@ -195,16 +324,17 @@ is required in order to test the core, including RISCV compatible software,
 support for simulations and support for peripherals, in a way that the 
 processor core produces observable results. Each element is stored with 
 similar elements in directories, in a way that the top level has the
-following organization:
+following organization (see also [Project structure](#project-structure) in *this* repository):
 
-- [README.md](README.md): the top level README file (points to this document)
-- [LICENSE](LICENSE): unlimited freedom! o/
-- [Makefile](Makefile): the show start here!
-- [src](src): the source code for the test firmware (boot.c, main.c etc in C language)
-- [rtl](rtl): the source code for the *DarkRISCV* core and the support logic (Verilog)
-- [sim](sim): the source code for the simulation to test the rtl files (currently via icarus)
-- [boards](boards): support and examples for different boards (currently via Xilinx ISE)
-- [tmp](tmp): empty, but the ISE will create lots of files here)
+- [README.md](README.md): the top level README (this file; includes upstream documentation below)
+- [Makefile](Makefile): top-level build entry (firmware, simulation, board stubs)
+- [src](src): firmware: `boot.S`, per-application makefiles, `darkshell` / `coremark` / `calc`, and [darklibc](src/darklibc) (in upstream trees this was often a flatter C layout: `boot.c`, `main.c`, etc.)
+- [rtl](rtl): Verilog: *DarkRISCV* core, DarkSoC, and peripherals
+- [sim](sim): simulation (Icarus Verilog, etc.)
+- [boards](boards): FPGA support — **this repository:** [de2_cyclone2](boards/de2_cyclone2) (Quartus, Cyclone II). Upstream also lists many Xilinx ISE / Vivado board ports.
+- [doc](doc): extra narrative documentation (CPU, SoC, MMI/O, simulation)
+- [scripts](scripts): Python helpers (e.g. `bin2hex`, MLEN extraction)
+- (Older upstream flow: a `tmp/` directory for ISE build artifacts; not required here.)
 
 
 Setup Instructions:
@@ -471,9 +601,11 @@ includes the boot code, the main process and auxiliary libraries. The code is
 compiled via *gcc* in a way that some auxiliary files are produced, 
 for example:
 
-- boot.c: the original C code for the boot process
-- boot.s: the assembler version of the C code, generated automatically by the gcc
-- boot.o: the compiled version of the C code, generated automatically by the gcc
+**Upstream example (flat C tree):** `boot.c` → `boot.s` / `boot.o` via the compiler. **This repository** uses [boot.S](src/boot.S) as the boot source, [darksocv.lds](src/darksocv.lds) (preprocessed to `darksocv.ld`), and links applications via `src/Makefile` (`APPLICATION=darkshell` by default) plus the [darklibc](src/darklibc) static library.
+
+- boot.c: (upstream) the original C code for the boot process; **here:** [boot.S](src/boot.S)
+- boot.s: the assembler version of the C code, generated automatically by the gcc; **or** the assembler listing from `boot.S`
+- boot.o: compiled object from the above
 
 When all .o files are produced, the result is linked in a *darksocv.o* ELF 
 file, which is used to produce the *darksocv.bin* file, which is converted to 
@@ -482,11 +614,13 @@ code in the blockRAMs). The linker also produces a *darksocv.lst* with a
 complete list of the code generated and the *darsocv.map*, which shows the
 map of all functions and variables in the produced code.
 
-The firmware concept is very simple:
+**In this repository,** the same ideas apply via `darkshell`/`coremark`/`calc` and [darklibc](src/darklibc) instead of a single `main.c` / `stdio.c` at the top level (see [Firmware applications](#firmware-applications) above).
 
-- boot.c contains the boot code
-- main.c contains the main application code (shell)
-- banner.c contains the riscv banner
+The firmware concept is very simple (upstream monolithic example):
+
+- boot.c contains the boot code — **here:** [boot.S](src/boot.S)
+- main.c contains the main application code (shell) — **here:** e.g. [darkshell/main.c](src/darkshell/main.c) when `APPLICATION=darkshell`
+- banner.c contains the riscv banner — **here:** often folded into `boot` / shell as appropriate
 - stdio.c contains a small version of stdio
 - io.c contains the IO interfaces
 
@@ -530,6 +664,8 @@ Implementation Notes section.
 For more detail, check the README.md file in the [rtl](https://github.com/darklife/darkriscv/tree/master/rtl) directory.
 
 ### "board" Directory
+
+**This repository** currently ships a board port for the [Terasic DE2 (Cyclone II)](boards/de2_cyclone2), documented in [boards/README.md](boards/README.md). The following list and descriptions refer to the **original DarkRISCV** upstream catalog (Xilinx ISE, Lattice, ECP5, etc.); many of those project directories are not present in this tree, but the board IDs in `rtl/config.vh` and the list below are still useful for reference when reading the core source.
 
 The current supported boards are:
 
