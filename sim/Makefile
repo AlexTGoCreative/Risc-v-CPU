@@ -89,24 +89,21 @@ DEPS = $(SRCS) $(RTLS) $(INCS)
 all: $(VCDS) $(COSIM_TARGET)
 	@echo simulation ok.
 
+ifndef PYTHON
+  ifeq ($(OS),Windows_NT)
+    PYTHON = py
+  else
+    PYTHON = python3
+  endif
+endif
+
 clean:
-	-rm -f $(VCDS) $(XSIM) $(TRCE) $(GUI_VCD_FILE) imgui.ini
-	-rm -rf tmp_gui
+	-$(PYTHON) ../scripts/helpers.py rm $(VCDS) $(XSIM) $(TRCE) $(GUI_VCD_FILE) imgui.ini
+	-$(PYTHON) ../scripts/helpers.py rmdir tmp_gui
 
 $(VCDS): $(XSIM)
-	echo "VCDS=$(VCDS): XSIM=$(XSIM)"
-	@echo finish |                                          \
-	awk '/^`define __TRACE__/{ exit(-1) }' ../rtl/config.vh \
-	&& ./$(XSIM)                                            \
-	|| ./$(XSIM) |                                          \
-	    awk '{  if($$0~/trace:/) {                          \
-	        print > "$(TRCE)";                              \
-	        if($$0~/40000005:/) {                           \
-	            split($$NF,A,":");                          \
-	            VAL=("0x"A[2])+0;                           \
-	            if(VAL>65536) VAL=VAL/256;                  \
-	            printf("%c",VAL/256); } }                   \
-	        else print }'                                   
+	@echo "VCDS=$(VCDS): XSIM=$(XSIM)"
+	$(PYTHON) run_sim.py $(XSIM) $(TRCE) ../rtl/config.vh
 
 $(XSIM): $(DEPS)
 	$(ICARUS) -I ../rtl -o $(XSIM) $(RTLS)

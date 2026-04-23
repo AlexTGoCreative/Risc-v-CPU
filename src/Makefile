@@ -30,7 +30,8 @@ include config.mk
 
 # Add your application here:
 
-APPLICATION = darkshell
+APPLICATION = mytest
+#APPLICATION = darkshell
 #APPLICATION = coremark
 #APPLICATION = badapple
 #APPLICATION = mandelbrot
@@ -98,7 +99,7 @@ $(APPLICATION)/$(APPLICATION).a:
 clean:
 	make -C $(DARKLIBC) clean
 	make -C $(APPLICATION) clean
-	-rm -f $(OBJS) $(PROJ).{S,bin,lst,map,ram,rom,x86,text,data,bin,ld,o,mem,rom.mem,ram.mem} $(PROJ)_uart.bin
+	-$(HELPERS) rm $(OBJS) $(PROJ).S $(PROJ).bin $(PROJ).lst $(PROJ).map $(PROJ).ram $(PROJ).rom $(PROJ).x86 $(PROJ).text $(PROJ).data $(PROJ).ld $(PROJ).o $(PROJ).mem $(PROJ).rom.mem $(PROJ).ram.mem $(PROJ)_uart.bin
 
 %.o: %.s Makefile
 	$(AS) $(ASFLAGS) -c $< -o $@
@@ -107,42 +108,33 @@ clean:
 	$(CC) $(CFLAGS) -S $< -o $@
 
 $(PROJ).ld: $(PROJ).lds Makefile
-	$(CPP) $(CPFLAGS) -DMLEN=$$(awk '/define MLEN/ { print 2**$$3 }' ../rtl/config.vh) $(PROJ).lds $(PROJ).ld
+	$(CPP) $(CPFLAGS) -DMLEN=$(shell $(HELPERS) extract_mlen ../rtl/config.vh) $(PROJ).lds $(PROJ).ld
 	
 $(PROJ).o: $(OBJS) $(PROJ).ld $(LIBS)
-	#$(RL) $(LDLIBS)
 	$(LD) $(LDFLAGS) -o $@ $(OBJS) $(LDLIBS)
 	$(OD) $(ODFLAGS) $@ > $(PROJ).S
 
 $(PROJ).rom.mem: $(PROJ).o
 	$(OC) $(OCFLAGS) $< $(PROJ).text --only-section .*text* 
-	hexdump -ve '1/4 "%08x\n"' $(PROJ).text > $@
-	#xxd -p -c 4 -g 4 $(PROJ).text > $@
-	rm $(PROJ).text
-	wc -l $@
+	$(HELPERS) bin2hex $(PROJ).text $@ $(ENDIAN)
+	$(HELPERS) rm $(PROJ).text
+	$(HELPERS) count_lines $@
 	@echo rom ok.
 
 $(PROJ).ram.mem: $(PROJ).o
 	$(OC) $(OCFLAGS) $< $(PROJ).data --only-section .*data*
-	echo buiding for $(ENDIAN)
-	hexdump -ve '1/4 "%08x\n"' $(PROJ).data > $@
-	#xxd -p -c 4 -g 4 $(PROJ).data > $@
-	rm $(PROJ).data
-	wc -l $@
+	@echo building for $(ENDIAN)
+	$(HELPERS) bin2hex $(PROJ).data $@ $(ENDIAN)
+	$(HELPERS) rm $(PROJ).data
+	$(HELPERS) count_lines $@
 	@echo ram ok.
 
 $(PROJ).mem: $(PROJ).o
 	$(OC) $(OCFLAGS) $< $(PROJ).bin
-ifeq ($(ENDIAN),little)
-	hexdump -ve '1/4 "%08x\n"' $(PROJ).bin > $@
-else
-	xxd -p -c 4 -g 4 $(PROJ).bin > $@
-endif
-	dd if=$(PROJ).bin of=$(PROJ)_uart.bin skip=512 bs=1
-	rm $(PROJ).bin
-	# uncomment for MIF file
-	#awk 'BEGIN { print "DEPTH = 1024;\nWIDTH = 32;\nADDRESS_RADIX = HEX;\nDATA_RADIX = HEX;\nCONTENT\nBEGIN" } { printf("%08x : %s\n",NR-1,$1); } END { print "END;" }' < $(PROJ).mem > $(PROJ).mif
-	wc -l $@
+	$(HELPERS) bin2hex $(PROJ).bin $@ $(ENDIAN)
+	$(HELPERS) skip_copy $(PROJ).bin $(PROJ)_uart.bin 512
+	$(HELPERS) rm $(PROJ).bin
+	$(HELPERS) count_lines $@
 	@echo mem ok for $(ENDIAN)-endian.
 	
 $(PROJ).x86: $(SRCS)

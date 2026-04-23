@@ -26,7 +26,17 @@
 # OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE. 
 
-SHELL := /bin/bash
+# Cross-platform shell and helpers configuration
+# Set PYTHON to your python executable (py on Windows, python3 on Linux/macOS)
+ifeq ($(OS),Windows_NT)
+    export PYTHON ?= py
+else
+    export PYTHON ?= python3
+    SHELL := /bin/bash
+endif
+
+HELPERS_PY = $(abspath $(dir $(lastword $(MAKEFILE_LIST)))/../scripts/helpers.py)
+export HELPERS = $(PYTHON) $(HELPERS_PY)
 
 ifndef HOST_CC
     export HOST_CC = gcc
@@ -34,13 +44,15 @@ ifndef HOST_CC
 endif
 
 ifndef CROSS
-    export CROSS = riscv32-embedded-elf
+    export CROSS = riscv-none-elf
+    #export CROSS = riscv32-embedded-elf
     #export CROSS = riscv64-unknown-elf
     #export CROSS = riscv32-unknown-elf
     #export CROSS = riscv-elf
     #export CROSS = riscv32-unknown-elf
 
-    export CCPATH = /usr/local/share/gcc-$(CROSS)/bin
+    export CCPATH = C:/Users/alexandru.tulbure/AppData/Roaming/xPacks/@xpack-dev-tools/riscv-none-elf-gcc/15.2.0-1.1/.content/bin
+    #export CCPATH = /usr/local/share/gcc-$(CROSS)/bin
     #export CCPATH = /usr/local/bin
     #export CCPATH = /opt/riscv/bin
     #export CCPATH = /usr/local/share/toolchain-$(CROSS)/bin
@@ -66,7 +78,11 @@ else
 endif
 
 ifndef BUILD
+ifeq ($(OS),Windows_NT)
+    export BUILD = $(shell $(PYTHON) -c "import datetime; print(datetime.datetime.now().strftime('%%a, %%d %%b %%Y %%H:%%M:%%S'))")
+else
     export BUILD = $(shell date -R)
+endif
 endif
 
 ifndef DARKLIBC
